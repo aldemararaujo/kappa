@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Calculadora Kappa vs AC1</title>
+<style>
+:root{
+--bg:#0f172a;--panel:#111827;--panel2:#1f2937;--text:#e5e7eb;--muted:#94a3b8;--accent:#22c55e;--accent2:#38bdf8;--border:#334155;--line:#1e293b;
+}
+.light{
+--bg:#f8fafc;--panel:#ffffff;--panel2:#f1f5f9;--text:#0f172a;--muted:#475569;--border:#cbd5e1;--line:#e2e8f0;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--text)}
+.container{max-width:900px;margin:auto;padding:16px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+input{padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--panel2);color:var(--text);width:100%}
+button{padding:10px 12px;border-radius:10px;border:none;font-weight:700;cursor:pointer;margin-right:6px;margin-top:6px}
+.primary{background:var(--accent);color:#052e16}
+.secondary{background:var(--accent2);color:#082f49}
+.small{font-size:0.9rem;color:var(--muted)}
+.hidden{display:none}
+.footer{margin-top:16px;font-size:0.8rem;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;text-align:center}
+.step-block{border:1px solid var(--border);background:var(--panel2);border-radius:12px;padding:12px;margin-top:10px}
+.step-title{font-weight:800;margin-bottom:6px}
+.formula{font-family:"Times New Roman",serif;background:var(--bg);border:1px solid var(--border);padding:10px;border-radius:10px;overflow:auto}
+.note{padding:10px;border-left:4px solid var(--accent2);background:rgba(56,189,248,0.08);border-radius:8px;margin-top:10px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:700px){.two-col{grid-template-columns:1fr}}
+.result-line{margin:8px 0}
+</style>
+</head>
+<body class="light">
+<div class="container">
+
+<header class="card" style="padding:20px 16px; background:linear-gradient(135deg, var(--panel), var(--panel2));">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+    <div>
+      <div class="small" style="font-weight:700;letter-spacing:0.04em;text-transform:uppercase;">Ferramenta educacional</div>
+      <h1 style="margin:6px 0 8px 0;font-size:1.8rem;line-height:1.15;">Calculadora de Concordância</h1>
+      <div style="font-size:1.05rem;font-weight:700;">Kappa de Cohen <span style="color:var(--muted);">vs</span> Gwet’s AC1</div>
+      <p class="small" style="max-width:680px;margin:10px 0 0 0;">Calcule concordância, intervalo de confiança de 95% e visualize o passo a passo detalhado para ensino, pesquisa e discussão metodológica com estudantes de medicina.</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button onclick="toggleTheme()">🌗 Tema</button>
+    </div>
+  </div>
+</header>
+
+<div class="card">
+<h2>Informe a tabela 2 x 2</h2>
+
+<div class="grid">
+<input id="a" type="number" value="1" />
+<input id="b" type="number" value="1" />
+<input id="c" type="number" value="1" />
+<input id="d" type="number" value="47" />
+</div>
+
+<div style="margin-top:10px">
+<button class="primary" onclick="calc()">Calcular</button>
+<button class="secondary" onclick="toggleSteps()">Mostrar cálculos</button>
+<button onclick="copyResult()">Copiar resultado</button>
+<button onclick="shareLink()">Gerar link</button>
+</div>
+</div>
+
+<div class="card">
+<h3>Resultados</h3>
+<p><b>N:</b> <span id="N"></span></p>
+<p><b>Po:</b> <span id="Po"></span></p>
+<p><b>Kappa:</b> <span id="kappa"></span> | IC95%: <span id="kappaCI"></span></p>
+<p><b>AC1:</b> <span id="ac1"></span> | IC95%: <span id="ac1CI"></span></p>
+</div>
+
+<div id="steps" class="card hidden">
+<h3>Passo a passo detalhado</h3>
+<div class="note small">Os cálculos são mostrados apenas quando o usuário clica em <b>Mostrar cálculos</b>. O detalhamento abaixo acompanha exatamente os valores informados na tabela.</div>
+<div id="stepsContent" class="small"></div>
+</div>
+
+<div class="footer">
+Versão micro SaaS educacional. Permite compartilhamento de resultados e uso em sala de aula.<br>
+Copyright © 2026<br><br>
+Este recurso é material complementar da disciplina de Pesquisa em Ciências da Saúde<br>
+da Universidade Estadual de Ciências da Saúde de Alagoas (UNCISAL)<br>
+Maceió, Alagoas, Brasil
+</div>
+
+</div>
+
+<script>
+function g(id){return Number(document.getElementById(id).value)||0}
+function f(x){return x.toFixed(4).replace('.',',')}
+
+function calc(){
+let a=g('a'),b=g('b'),c=g('c'),d=g('d')
+let N=a+b+c+d
+if(N<=0){
+Nspan.innerText='0'
+Pospan.innerText='-'
+kappaSpan.innerText='-'
+kappaCIspan.innerText='-'
+ac1Span.innerText='-'
+ac1CIspan.innerText='-'
+stepsContent.innerHTML='<div class="step-block">Preencha valores válidos para calcular.</div>'
+return
+}
+
+let Po=(a+d)/N
+
+let pASim=(a+b)/N
+let pBSim=(a+c)/N
+let pANao=(c+d)/N
+let pBNao=(b+d)/N
+
+let Pe=(pASim*pBSim)+(pANao*pBNao)
+let kappa=(1-Pe===0)?NaN:(Po-Pe)/(1-Pe)
+
+let p=(pASim+pBSim)/2
+let PeStar=2*p*(1-p)
+let ac1=(1-PeStar===0)?NaN:(Po-PeStar)/(1-PeStar)
+
+let seK=Math.sqrt((Po*(1-Po))/(N*(1-Pe)*(1-Pe)))
+let seA=Math.sqrt((Po*(1-Po))/(N*(1-PeStar)*(1-PeStar)))
+
+let kLow=kappa-1.96*seK
+let kHigh=kappa+1.96*seK
+let aLow=ac1-1.96*seA
+let aHigh=ac1+1.96*seA
+
+Nspan.innerText=N
+Pospan.innerText=f(Po)
+kappaSpan.innerText=f(kappa)
+kappaCIspan.innerText=`${f(kLow)} a ${f(kHigh)}`
+ac1Span.innerText=f(ac1)
+ac1CIspan.innerText=`${f(aLow)} a ${f(aHigh)}`
+
+stepsContent.innerHTML=`
+<div class="two-col">
+  <div>
+    <div class="step-block">
+      <div class="step-title">1. Tabela informada</div>
+      <div class="result-line"><b>a</b> = ${a}</div>
+      <div class="result-line"><b>b</b> = ${b}</div>
+      <div class="result-line"><b>c</b> = ${c}</div>
+      <div class="result-line"><b>d</b> = ${d}</div>
+      <div class="result-line"><b>N</b> = a + b + c + d = ${a} + ${b} + ${c} + ${d} = <b>${N}</b></div>
+    </div>
+
+    <div class="step-block">
+      <div class="step-title">2. Concordância observada, Po</div>
+      <div class="formula">Po = (a + d) / N</div>
+      <div class="result-line">Po = (${a} + ${d}) / ${N}</div>
+      <div class="result-line">Po = ${a + d} / ${N}</div>
+      <div class="result-line"><b>Po = ${f(Po)}</b></div>
+      <div class="note">Interpretação, esta é a proporção de casos em que os avaliadores concordaram diretamente.</div>
+    </div>
+
+    <div class="step-block">
+      <div class="step-title">3. Proporções marginais para o Kappa</div>
+      <div class="formula">P(A sim) = (a + b) / N</div>
+      <div class="result-line">P(A sim) = (${a} + ${b}) / ${N} = <b>${f(pASim)}</b></div>
+      <div class="formula">P(A não) = (c + d) / N</div>
+      <div class="result-line">P(A não) = (${c} + ${d}) / ${N} = <b>${f(pANao)}</b></div>
+      <div class="formula">P(B sim) = (a + c) / N</div>
+      <div class="result-line">P(B sim) = (${a} + ${c}) / ${N} = <b>${f(pBSim)}</b></div>
+      <div class="formula">P(B não) = (b + d) / N</div>
+      <div class="result-line">P(B não) = (${b} + ${d}) / ${N} = <b>${f(pBNao)}</b></div>
+    </div>
+
+    <div class="step-block">
+      <div class="step-title">4. Cálculo do Kappa</div>
+      <div class="formula">Pe = [P(A sim) × P(B sim)] + [P(A não) × P(B não)]</div>
+      <div class="result-line">Pe = (${f(pASim)} × ${f(pBSim)}) + (${f(pANao)} × ${f(pBNao)})</div>
+      <div class="result-line">Pe = <b>${f(Pe)}</b></div>
+      <div class="formula">Kappa = (Po − Pe) / (1 − Pe)</div>
+      <div class="result-line">Kappa = (${f(Po)} − ${f(Pe)}) / (1 − ${f(Pe)})</div>
+      <div class="result-line"><b>Kappa = ${f(kappa)}</b></div>
+    </div>
+
+    <div class="step-block">
+      <div class="step-title">5. Intervalo de confiança de 95% do Kappa</div>
+      <div class="formula">EP = √[ Po(1 − Po) / N(1 − Pe)² ]</div>
+      <div class="result-line">EP = √[ ${f(Po)} × (1 − ${f(Po)}) / (${N} × (1 − ${f(Pe)})²) ]</div>
+      <div class="result-line"><b>EP = ${f(seK)}</b></div>
+      <div class="formula">IC95% = estimativa ± 1,96 × EP</div>
+      <div class="result-line">Limite inferior = ${f(kappa)} − 1,96 × ${f(seK)} = <b>${f(kLow)}</b></div>
+      <div class="result-line">Limite superior = ${f(kappa)} + 1,96 × ${f(seK)} = <b>${f(kHigh)}</b></div>
+      <div class="result-line"><b>IC95% do Kappa = ${f(kLow)} a ${f(kHigh)}</b></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="step-block">
+      <div class="step-title">6. Cálculo do Gwet’s AC1</div>
+      <div class="formula">p = [P(A sim) + P(B sim)] / 2</div>
+      <div class="result-line">p = (${f(pASim)} + ${f(pBSim)}) / 2</div>
+      <div class="result-line"><b>p = ${f(p)}</b></div>
+      <div class="formula">Pe* = 2p(1 − p)</div>
+      <div class="result-line">Pe* = 2 × ${f(p)} × (1 − ${f(p)})</div>
+      <div class="result-line"><b>Pe* = ${f(PeStar)}</b></div>
+      <div class="formula">AC1 = (Po − Pe*) / (1 − Pe*)</div>
+      <div class="result-line">AC1 = (${f(Po)} − ${f(PeStar)}) / (1 − ${f(PeStar)})</div>
+      <div class="result-line"><b>AC1 = ${f(ac1)}</b></div>
+    </div>
+
+    <div class="step-block">
+      <div class="step-title">7. Intervalo de confiança de 95% do AC1</div>
+      <div class="formula">EP = √[ Po(1 − Po) / N(1 − Pe*)² ]</div>
+      <div class="result-line">EP = √[ ${f(Po)} × (1 − ${f(Po)}) / (${N} × (1 − ${f(PeStar)})²) ]</div>
+      <div class="result-line"><b>EP = ${f(seA)}</b></div>
+      <div class="formula">IC95% = estimativa ± 1,96 × EP</div>
+      <div class="result-line">Limite inferior = ${f(ac1)} − 1,96 × ${f(seA)} = <b>${f(aLow)}</b></div>
+      <div class="result-line">Limite superior = ${f(ac1)} + 1,96 × ${f(seA)} = <b>${f(aHigh)}</b></div>
+      <div class="result-line"><b>IC95% do AC1 = ${f(aLow)} a ${f(aHigh)}</b></div>
+    </div>
+
+    <div class="step-block">
+      <div class="step-title">8. Leitura comparativa</div>
+      <div class="result-line">Concordância observada, <b>${f(Po)}</b></div>
+      <div class="result-line">Kappa, <b>${f(kappa)}</b></div>
+      <div class="result-line">AC1, <b>${f(ac1)}</b></div>
+      <div class="note">Quando há forte predominância de uma categoria, o Kappa pode cair artificialmente. O AC1 tende a permanecer mais estável.</div>
+    </div>
+  </div>
+</div>`
+}
+
+function copyResult(){
+let txt=`Kappa: ${kappaSpan.innerText} IC:${kappaCIspan.innerText} | AC1: ${ac1Span.innerText} IC:${ac1CIspan.innerText}`
+navigator.clipboard.writeText(txt)
+alert('Copiado')
+}
+
+function shareLink(){
+let a=g('a'),b=g('b'),c=g('c'),d=g('d')
+let url=window.location.origin+window.location.pathname+`?a=${a}&b=${b}&c=${c}&d=${d}`
+navigator.clipboard.writeText(url)
+alert('Link copiado')
+}
+
+function toggleSteps(){
+const box=document.getElementById('steps')
+const btn=event && event.target ? event.target : null
+box.classList.toggle('hidden')
+if(btn){
+btn.textContent=box.classList.contains('hidden')?'Mostrar cálculos':'Ocultar cálculos'
+}
+}
+function toggleTheme(){document.body.classList.toggle('light')}
+
+const params=new URLSearchParams(window.location.search)
+if(params.has('a')){
+['a','b','c','d'].forEach(id=>{
+if(params.get(id)) document.getElementById(id).value=params.get(id)
+})
+}
+
+const Nspan=document.getElementById('N')
+const Pospan=document.getElementById('Po')
+const kappaSpan=document.getElementById('kappa')
+const kappaCIspan=document.getElementById('kappaCI')
+const ac1Span=document.getElementById('ac1')
+const ac1CIspan=document.getElementById('ac1CI')
+const stepsContent=document.getElementById('stepsContent')
+
+calc()
+</script>
+
+</body>
+</html>
